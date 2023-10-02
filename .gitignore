@@ -1,2 +1,3 @@
 main_floppy.img
-main.bin
+kernel.bin
+bootloader.bin
