@@ -1,5 +1,5 @@
 all: build
-build:
+build: ./src/bootloader/bootloader.asm
 	mkdir -p build
 	nasm -f bin ./src/bootloader/bootloader.asm -o build/cora.bin
 run: build 
