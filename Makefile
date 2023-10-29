@@ -1,27 +1,16 @@
-ASM=nasm
-
-SRC_DIR=src
-BUILD_DIR=build
-
-.PHONY: all floppy_image kernel bootloader clean always
-
-floppy_image: $(BUILD_DIR)/main_floppy.img
-$(BUILD_DIR)/main_floppy.img: bootloader kernel
-	dd if=/dev/zero of=$(BUILD_DIR)/main_floppy.img bs=512 count=2880
-	mkfs.fat -F 12 -n "NBOS" $(BUILD_DIR)/main_floppy.img
-	dd if=$(BUILD_DIR)/bootloader.bin of=$(BUILD_DIR)/main_floppy.img conv=notrunc
-	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
-
-bootloader: $(BUILD_DIR)/bootloader.bin
-$(BUILD_DIR)/bootloader.bin: always
-	$(ASM) $(SRC_DIR)/bootloader/bootloader.asm -f bin -o $(BUILD_DIR)/bootloader.bin
-
-kernel: $(BUILD_DIR)/kernel.bin
-$(BUILD_DIR)/kernel.bin: always
-	$(ASM) $(SRC_DIR)/kernel/kernel.asm -f bin -o $(BUILD_DIR)/kernel.bin
-
-always:
-	mkdir -p $(BUILD_DIR)
-
+all: build
+build:
+	mkdir -p build
+	nasm -f bin ./src/bootloader/bootloader.asm -o build/cora.bin
+run: build 
+	qemu-system-i386.exe build/cora.bin
+iso: build 
+	mkdir -p build/iso
+	dd if=/dev/zero of=build/iso/cora.img bs=1024 count=1440
+	dd if=build/cora.bin of=build/iso/cora.img seek=0 count=1 conv=notrunc
+	genisoimage -quiet -V 'CORA' -input-charset iso8859-1 -o build/cora.iso -b cora.img -hide build/iso/cora.img build/iso
+	rm -rf build/iso
+run-iso: iso 
+	qemu-system-i386.exe -cdrom build/cora.iso
 clean:
-	rm -rf $(BUILD_DIR)/*
+	rm -rf build
