@@ -74,9 +74,10 @@ void set_cursor(int x, int y) {
 	cursor_y = y;
 }
 
-void main() {
+int main() {
 	clear_screen();
 	set_cursor(0, 3);
 	print_number(12345);
 	print_string("\nHello, World!\nThis is a new line!\nThis is another line!\nThis is the last line!");
+	return 0;
 }
