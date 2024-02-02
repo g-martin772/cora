@@ -1,23 +1,27 @@
 BOOT=src/bootloader/bootloader.asm
 MULTIBOOT=src/bootloader/multiboot.asm
-KERNEL=src/kernel/kernel.c
+KERNEL=$(wildcard src/kernel/*.c)
+OBJ=$(patsubst src/kernel/%.c, build/%.o, $(KERNEL))
+OBJ_D=$(patsubst src/kernel/%.c, build/%_d.o, $(KERNEL))
 LINKER=src/linker.ld
 
 IMAGE=build/cora.bin
 ISO=build/cora.iso
 
-all: build
+all: build iso
 
-build: $(MULTIBOOT) $(KERNEL) $(LINKER)
+bin_dir:
 	mkdir -p build
+$(OBJ): build/%.o: src/kernel/%.c bin_dir
+	gcc -m32 -c $< -o $@ -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+$(OBJ_D): build/%.o: src/kernel/%.c bin_dir
+	gcc -m32 -c $< -o $@ -std=gnu99 -ffreestanding -O2 -Wall -Wextra -ggdb
+build: $(MULTIBOOT) $(OBJ) $(LINKER) bin_dir
 	nasm -f elf32 $(MULTIBOOT) -o build/multiboot.o
-	gcc -m32 -c $(KERNEL) -o build/kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-	ld -m elf_i386 -T $(LINKER) build/multiboot.o build/kernel.o -o $(IMAGE) -nostdlib
-build_debug: $(MULTIBOOT) $(KERNEL) $(LINKER)
-	mkdir -p build
+	ld -m elf_i386 -T $(LINKER) build/multiboot.o $(OBJ) -o $(IMAGE) -nostdlib
+build_debug: $(MULTIBOOT) $(OBJ) $(LINKER) bin_dir
 	nasm -f elf32 $(MULTIBOOT) -o build/multiboot.o
-	gcc -m32 -c $(KERNEL) -o build/kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra -ggdb
-	ld -m elf_i386 -T $(LINKER) build/multiboot.o build/kernel.o -o $(IMAGE) -nostdlib
+	ld -m elf_i386 -T $(LINKER) build/multiboot.o $(OBJ_D) -o $(IMAGE) -nostdlib
 run: build 
 	qemu-system-i386.exe -kernel $(IMAGE) -monitor stdio
 debug: build_debug
